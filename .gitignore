@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Training outputs
+outputs/
+runs/
+logs/
+checkpoints/
+samples/
+generated_images/
+
+# Data
+data/
+datasets/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.pt
+*.pth
+*.ckpt
+*.h5
