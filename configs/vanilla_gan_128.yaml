@@ -1,4 +1,4 @@
-# Config for vanilla gan with 64x64 images
+# Config for vanilla GAN with 128x128 images
 
 # Model architecture
 model_name: vanilla
