@@ -5,6 +5,7 @@ import random
 import numpy as np
 import torch
 
+
 # Set a random seed for all random functions for reproducibility
 def set_random_seed(seed: int) -> None:
     random.seed(seed)
@@ -24,10 +25,6 @@ def ensure_dir(path: str | Path) -> None:
 def save_checkpoint(state: dict, path: str | Path) -> None:
     ensure_dir(Path(path).parent)
     torch.save(state, path)
-    
-# Load a trained model from disk
-def load_checkpoint(path: str | Path) -> dict:
-    return torch.load(path)
 
 # Load arguments from YAML config file
 def load_config(config_path: str | Path) -> dict:
