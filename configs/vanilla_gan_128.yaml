@@ -8,14 +8,14 @@ data_dir: data
 output_dir: outputs/vanilla_gan_64
 
 # Image settings
-image_size: 64
+image_size: 128
 image_channels: 3
 latent_dim: 100
 
 # Training hyperparameters
-batch_size: 64
+batch_size: 256
 num_epochs: 100
-learning_rate: 0.0002
+learning_rate: 0.0008
 beta1: 0.5
 beta2: 0.999
 num_workers: 0
@@ -24,4 +24,4 @@ random_seed: 42
 # Output settings
 num_sample_images: 16
 sample_every: 5
-checkpoint_every: 10
+checkpoint_every: 5
