@@ -1,0 +1,27 @@
+# Config for vanilla gan with 64x64 images
+
+# Model architecture
+model_name: vanilla
+
+# Directories
+data_dir: data
+output_dir: outputs/vanilla_gan_64
+
+# Image settings
+image_size: 64
+image_channels: 3
+latent_dim: 100
+
+# Training hyperparameters
+batch_size: 64
+num_epochs: 100
+learning_rate: 0.0002
+beta1: 0.5
+beta2: 0.999
+num_workers: 0
+random_seed: 42
+
+# Output settings
+num_sample_images: 16
+sample_every: 5
+checkpoint_every: 10
