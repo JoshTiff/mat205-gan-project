@@ -10,7 +10,7 @@ import yaml
 from dataset import get_dataloader
 from models import build_models
 from losses import get_loss_functions
-from utils import set_random_seed, get_device, ensure_dir, save_checkpoint
+from utils import set_random_seed, get_device, ensure_dir, save_checkpoint, load_config
 
 # Parse command line arguments
 def parse_args() -> argparse.Namespace:
@@ -22,12 +22,6 @@ def parse_args() -> argparse.Namespace:
         help="Path to YAML config file",
     )
     return parser.parse_args()
-
-# Load arguments from YAML config file
-def load_config(config_path: str | Path) -> dict:
-    with open(config_path, "r", encoding="utf-8") as file:
-        config = yaml.safe_load(file)
-    return config
 
 # Save a snapshot of images with fixed noise over time
 def save_generated_samples(
@@ -219,7 +213,6 @@ def train() -> None:
     )
 
     print("Training complete.")
-
 
 if __name__ == "__main__":
     train()

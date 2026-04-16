@@ -7,7 +7,7 @@ import torch
 from torchvision.utils import save_image
 import yaml
 from models import build_models
-from utils import set_random_seed, get_device, ensure_dir
+from utils import set_random_seed, get_device, ensure_dir, load_config
 
 # Parse command line arguments
 def parse_args() -> argparse.Namespace:
@@ -37,12 +37,6 @@ def parse_args() -> argparse.Namespace:
         help="Directory to save generated images",
     )
     return parser.parse_args()
-
-# Load arguments from YAML config file
-def load_config(config_path: str | Path) -> dict:
-    with open(config_path, "r", encoding="utf-8") as file:
-        config = yaml.safe_load(file)
-    return config
 
 # Save generated images as a single grid
 def save_generated_grid(

@@ -1,4 +1,4 @@
-# Essential functions that will be used in multiple files
+# Functions that may be used across multiple files
 
 from pathlib import Path
 import random
@@ -28,3 +28,9 @@ def save_checkpoint(state: dict, path: str | Path) -> None:
 # Load a trained model from disk
 def load_checkpoint(path: str | Path) -> dict:
     return torch.load(path)
+
+# Load arguments from YAML config file
+def load_config(config_path: str | Path) -> dict:
+    with open(config_path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+    return config
