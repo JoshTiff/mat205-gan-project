@@ -43,6 +43,40 @@ def vanilla_generator_loss(
 
     return adversarial_loss(fake_preds, target_labels)
 
+# Adversarial loss for DCGAN
+def dcgan_adversarial_loss() -> nn.Module:
+    return nn.BCELoss()
+
+# Discriminator loss for DCGAN
+def dcgan_discriminator_loss(
+    discriminator: nn.Module,
+    real_images: torch.Tensor,
+    fake_images: torch.Tensor,
+    adversarial_loss: nn.Module,
+    device: torch.device,
+) -> torch.Tensor:
+    return vanilla_discriminator_loss(
+        discriminator=discriminator,
+        real_images=real_images,
+        fake_images=fake_images,
+        adversarial_loss=adversarial_loss,
+        device=device,
+    )
+
+# Generator loss for DCGAN
+def dcgan_generator_loss(
+    discriminator: nn.Module,
+    fake_images: torch.Tensor,
+    adversarial_loss: nn.Module,
+    device: torch.device,
+) -> torch.Tensor:
+    return vanilla_generator_loss(
+        discriminator=discriminator,
+        fake_images=fake_images,
+        adversarial_loss=adversarial_loss,
+        device=device,
+    )
+
 # Select the correct loss functions for a given GAN type
 def get_loss_functions(
     model_name: str,
@@ -53,6 +87,14 @@ def get_loss_functions(
             adversarial_loss,
             vanilla_discriminator_loss,
             vanilla_generator_loss,
+        )
+            
+    elif model_name == "dcgan":
+        adversarial_loss = dcgan_adversarial_loss()
+        return (
+            adversarial_loss,
+            dcgan_discriminator_loss,
+            dcgan_generator_loss,
         )
 
     # Add other loss functions here when they are implemented

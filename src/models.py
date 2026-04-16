@@ -66,10 +66,6 @@ class VanillaDiscriminator(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
     
-import torch
-import torch.nn as nn
-
-
 # Generator for DCGAN
 class DCGenerator(nn.Module):
     def __init__(
