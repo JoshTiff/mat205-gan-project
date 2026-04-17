@@ -149,6 +149,45 @@ def wgan_gp_generator_loss(
     fake_scores = discriminator(fake_images)
     return -fake_scores.mean()
 
+# Adversarial loss for LSGAN
+def lsgan_adversarial_loss() -> nn.Module:
+    return nn.MSELoss()
+
+# Discriminator loss for LSGAN
+def lsgan_discriminator_loss(
+    discriminator: nn.Module,
+    real_images: torch.Tensor,
+    fake_images: torch.Tensor,
+    adversarial_loss: nn.Module,
+    device: torch.device,
+) -> torch.Tensor:
+    batch_size = real_images.size(0)
+
+    real_labels = torch.ones((batch_size, 1), device=device)
+    fake_labels = torch.zeros((batch_size, 1), device=device)
+
+    real_preds = discriminator(real_images)
+    fake_preds = discriminator(fake_images.detach())
+
+    real_loss = 0.5 * adversarial_loss(real_preds, real_labels)
+    fake_loss = 0.5 * adversarial_loss(fake_preds, fake_labels)
+
+    return real_loss + fake_loss
+
+# Generator loss for LSGAN
+def lsgan_generator_loss(
+    discriminator: nn.Module,
+    fake_images: torch.Tensor,
+    adversarial_loss: nn.Module,
+    device: torch.device,
+) -> torch.Tensor:
+    batch_size = fake_images.size(0)
+
+    target_labels = torch.ones((batch_size, 1), device=device)
+    fake_preds = discriminator(fake_images)
+
+    return 0.5 * adversarial_loss(fake_preds, target_labels)
+
 # Select the correct loss functions for a given GAN type
 def get_loss_functions(
     model_name: str,
@@ -177,6 +216,12 @@ def get_loss_functions(
             wgan_gp_generator_loss,
         )
 
-    # Add other loss functions here when they are implemented
+    elif model_name == "wgan_gp":
+        adversarial_loss = wgan_gp_adversarial_loss()
+        return (
+            adversarial_loss,
+            wgan_gp_discriminator_loss,
+            wgan_gp_generator_loss,
+        )
 
     raise ValueError(f"Unsupported model name: {model_name}")

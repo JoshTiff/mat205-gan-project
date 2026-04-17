@@ -1,0 +1,22 @@
+# Config for LSGAN with 128x128 images
+
+model_name: lsgan
+
+data_dir: data
+output_dir: outputs/lsgan_128
+
+image_size: 128
+image_channels: 3
+latent_dim: 100
+
+batch_size: 64
+num_epochs: 100
+learning_rate: 0.0002
+beta1: 0.5
+beta2: 0.999
+num_workers: 0
+random_seed: 42
+
+num_sample_images: 16
+sample_every: 5
+checkpoint_every: 5
