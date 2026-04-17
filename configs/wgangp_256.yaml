@@ -1,0 +1,29 @@
+# Config for WGAN-GP with 256x256 images
+
+# Model architecture
+model_name: wgan_gp
+
+# Directories
+data_dir: data
+output_dir: outputs/wgan_gp_256
+
+# Image settings
+image_size: 256
+image_channels: 3
+latent_dim: 100
+
+# Training hyperparameters
+batch_size: 64
+num_epochs: 100
+learning_rate: 0.0001
+beta1: 0.0
+beta2: 0.9
+n_critic: 5
+lambda_gp: 10.0
+num_workers: 0
+random_seed: 42
+
+# Output settings
+num_sample_images: 16
+sample_every: 5
+checkpoint_every: 5
