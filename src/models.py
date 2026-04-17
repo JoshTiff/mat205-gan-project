@@ -152,9 +152,146 @@ class DCDiscriminator(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.model(x)
         return x.view(-1, 1)
-    
+
+# Check that WGAN is using a valid image size
+def _validate_wgan_gp_image_size(image_size: int) -> None:
+    if image_size not in (128, 256):
+        raise ValueError(
+            "WGAN-GP currently supports image_size=128 or image_size=256 only."
+        )
+
+# Generator for WGAN-GP
+class WGANGPGenerator(nn.Module):
+    def __init__(
+        self,
+        latent_dim: int,
+        image_channels: int,
+        image_size: int,
+        feature_maps: int = 64,
+    ) -> None:
+        super().__init__()
+
+        _validate_wgan_gp_image_size(image_size)
+
+        self.latent_dim = latent_dim
+        self.image_size = image_size
+
+        start_mult = image_size // 8  # 16 for 128, 32 for 256
+
+        layers: list[nn.Module] = [
+            nn.ConvTranspose2d(
+                latent_dim,
+                feature_maps * start_mult,
+                kernel_size=4,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
+            nn.BatchNorm2d(feature_maps * start_mult),
+            nn.ReLU(),
+        ]
+
+        current_mult = start_mult
+        while current_mult > 1:
+            next_mult = current_mult // 2
+            layers.extend(
+                [
+                    nn.ConvTranspose2d(
+                        feature_maps * current_mult,
+                        feature_maps * next_mult,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                        bias=False,
+                    ),
+                    nn.BatchNorm2d(feature_maps * next_mult),
+                    nn.ReLU(),
+                ]
+            )
+            current_mult = next_mult
+
+        layers.extend(
+            [
+                nn.ConvTranspose2d(
+                    feature_maps,
+                    image_channels,
+                    kernel_size=4,
+                    stride=2,
+                    padding=1,
+                    bias=False,
+                ),
+                nn.Tanh(),
+            ]
+        )
+
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.ndim == 2:
+            x = x.view(x.size(0), x.size(1), 1, 1)
+        return self.model(x)
+
 # Critic for WGAN-GP
 class WGANCritic(nn.Module):
+    def __init__(
+        self,
+        image_channels: int,
+        image_size: int,
+        feature_maps: int = 64,
+    ) -> None:
+        super().__init__()
+
+        _validate_wgan_gp_image_size(image_size)
+
+        max_mult = image_size // 8  # 16 for 128, 32 for 256
+
+        layers: list[nn.Module] = [
+            nn.Conv2d(
+                image_channels,
+                feature_maps,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.LeakyReLU(0.2),
+        ]
+
+        current_mult = 1
+        while current_mult < max_mult:
+            next_mult = current_mult * 2
+            layers.extend(
+                [
+                    nn.Conv2d(
+                        feature_maps * current_mult,
+                        feature_maps * next_mult,
+                        kernel_size=4,
+                        stride=2,
+                        padding=1,
+                        bias=False,
+                    ),
+                    nn.LeakyReLU(0.2),
+                ]
+            )
+            current_mult = next_mult
+
+        layers.append(
+            nn.Conv2d(
+                feature_maps * current_mult,
+                1,
+                kernel_size=4,
+                stride=1,
+                padding=0,
+                bias=False,
+            )
+        )
+
+        self.model = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.model(x)
+        return x.view(-1, 1)
+    
     def __init__(
         self,
         image_channels: int,
@@ -168,19 +305,19 @@ class WGANCritic(nn.Module):
 
         self.model = nn.Sequential(
             nn.Conv2d(image_channels, feature_maps, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
 
             nn.Conv2d(feature_maps, feature_maps * 2, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
 
             nn.Conv2d(feature_maps * 2, feature_maps * 4, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
 
             nn.Conv2d(feature_maps * 4, feature_maps * 8, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
 
             nn.Conv2d(feature_maps * 8, feature_maps * 16, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
 
             nn.Conv2d(feature_maps * 16, 1, 4, 1, 0, bias=False),
         )
@@ -259,7 +396,7 @@ def build_models(
         )
         
     elif model_name == "wgan_gp":
-        generator = DCGenerator(
+        generator = WGANGPGenerator(
             latent_dim=latent_dim,
             image_channels=image_channels,
             image_size=image_size,
