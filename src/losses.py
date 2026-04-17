@@ -216,12 +216,12 @@ def get_loss_functions(
             wgan_gp_generator_loss,
         )
 
-    elif model_name == "wgan_gp":
-        adversarial_loss = wgan_gp_adversarial_loss()
+    elif model_name == "lsgan":
+        adversarial_loss = lsgan_adversarial_loss()
         return (
             adversarial_loss,
-            wgan_gp_discriminator_loss,
-            wgan_gp_generator_loss,
+            lsgan_discriminator_loss,
+            lsgan_generator_loss,
         )
 
     raise ValueError(f"Unsupported model name: {model_name}")
