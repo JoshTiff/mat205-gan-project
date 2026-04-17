@@ -5,7 +5,7 @@ model_name: wgan_gp
 
 # Directories
 data_dir: data
-output_dir: outputs/wgan_gp_64
+output_dir: outputs/wgan_gp_128
 
 # Image settings
 image_size: 128
