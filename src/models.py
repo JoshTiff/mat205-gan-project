@@ -292,40 +292,6 @@ class WGANCritic(nn.Module):
         x = self.model(x)
         return x.view(-1, 1)
     
-    def __init__(
-        self,
-        image_channels: int,
-        image_size: int,
-        feature_maps: int = 64,
-    ) -> None:
-        super().__init__()
-
-        if image_size != 128:
-            raise ValueError("This WGAN-GP critic currently supports image_size=128 only.")
-
-        self.model = nn.Sequential(
-            nn.Conv2d(image_channels, feature_maps, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(feature_maps, feature_maps * 2, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(feature_maps * 2, feature_maps * 4, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(feature_maps * 4, feature_maps * 8, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(feature_maps * 8, feature_maps * 16, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(feature_maps * 16, 1, 4, 1, 0, bias=False),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.model(x)
-        return x.view(-1, 1)
-    
 # Discriminator for LSGAN
 class LSDiscriminator(nn.Module):
     def __init__(
