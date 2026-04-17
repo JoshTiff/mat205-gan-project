@@ -1,11 +1,11 @@
-# Config for vanilla GAN with 128x128 images
+# Config for WGAN-GP with 128x128 images
 
 # Model architecture
-model_name: vanilla
+model_name: wgan_gp
 
 # Directories
 data_dir: data
-output_dir: outputs/vanilla_gan_64
+output_dir: outputs/wgan_gp_64
 
 # Image settings
 image_size: 128
@@ -15,9 +15,11 @@ latent_dim: 100
 # Training hyperparameters
 batch_size: 64
 num_epochs: 100
-learning_rate: 0.0002
-beta1: 0.5
-beta2: 0.999
+learning_rate: 0.0001
+beta1: 0.0
+beta2: 0.9
+n_critic: 5
+lambda_gp: 10.0
 num_workers: 0
 random_seed: 42
 
