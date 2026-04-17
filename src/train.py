@@ -90,18 +90,29 @@ def train() -> None:
     adversarial_loss, discriminator_loss_fn, generator_loss_fn = get_loss_functions(
         config["model_name"]
     )
-    adversarial_loss = adversarial_loss.to(device)
+
+    if adversarial_loss is not None:
+        adversarial_loss = adversarial_loss.to(device)
+
+    if config["model_name"] == "wgan_gp":
+        learning_rate = config.get("learning_rate", 1e-4)
+        beta1 = config.get("beta1", 0.0)
+        beta2 = config.get("beta2", 0.9)
+    else:
+        learning_rate = config["learning_rate"]
+        beta1 = config["beta1"]
+        beta2 = config["beta2"]
 
     g_optimizer = optim.Adam(
         generator.parameters(),
-        lr=config["learning_rate"],
-        betas=(config["beta1"], config["beta2"]),
+        lr=learning_rate,
+        betas=(beta1, beta2),
     )
 
     d_optimizer = optim.Adam(
         discriminator.parameters(),
-        lr=config["learning_rate"],
-        betas=(config["beta1"], config["beta2"]),
+        lr=learning_rate,
+        betas=(beta1, beta2),
     )
 
     fixed_noise = torch.randn(
@@ -127,41 +138,84 @@ def train() -> None:
             real_images = real_images.to(device, non_blocking=True)
             batch_size = real_images.size(0)
 
-            # Train discriminator
-            d_optimizer.zero_grad()
+            if config["model_name"] == "wgan_gp":
+                n_critic = config.get("n_critic", 5)
+                lambda_gp = config.get("lambda_gp", 10.0)
 
-            noise = torch.randn(batch_size, config["latent_dim"], device=device)
-            fake_images = generator(noise)
+                critic_loss_sum = 0.0
 
-            d_loss = discriminator_loss_fn(
-                discriminator=discriminator,
-                real_images=real_images,
-                fake_images=fake_images,
-                adversarial_loss=adversarial_loss,
-                device=device,
-            )
+                for _ in range(n_critic):
+                    d_optimizer.zero_grad()
 
-            d_loss.backward()
-            d_optimizer.step()
+                    noise = torch.randn(batch_size, config["latent_dim"], device=device)
+                    fake_images = generator(noise)
 
-            # Train generator
-            g_optimizer.zero_grad()
+                    d_loss = discriminator_loss_fn(
+                        discriminator=discriminator,
+                        real_images=real_images,
+                        fake_images=fake_images,
+                        adversarial_loss=adversarial_loss,
+                        device=device,
+                        lambda_gp=lambda_gp,
+                    )
 
-            noise = torch.randn(batch_size, config["latent_dim"], device=device)
-            fake_images = generator(noise)
+                    d_loss.backward()
+                    d_optimizer.step()
+                    critic_loss_sum += d_loss.item()
 
-            g_loss = generator_loss_fn(
-                discriminator=discriminator,
-                fake_images=fake_images,
-                adversarial_loss=adversarial_loss,
-                device=device,
-            )
+                g_optimizer.zero_grad()
 
-            g_loss.backward()
-            g_optimizer.step()
+                noise = torch.randn(batch_size, config["latent_dim"], device=device)
+                fake_images = generator(noise)
 
-            running_d_loss += d_loss.item()
-            running_g_loss += g_loss.item()
+                g_loss = generator_loss_fn(
+                    discriminator=discriminator,
+                    fake_images=fake_images,
+                    adversarial_loss=adversarial_loss,
+                    device=device,
+                )
+
+                g_loss.backward()
+                g_optimizer.step()
+
+                running_d_loss += critic_loss_sum / n_critic
+                running_g_loss += g_loss.item()
+
+            else:
+                # Existing vanilla / DCGAN code
+                d_optimizer.zero_grad()
+
+                noise = torch.randn(batch_size, config["latent_dim"], device=device)
+                fake_images = generator(noise)
+
+                d_loss = discriminator_loss_fn(
+                    discriminator=discriminator,
+                    real_images=real_images,
+                    fake_images=fake_images,
+                    adversarial_loss=adversarial_loss,
+                    device=device,
+                )
+
+                d_loss.backward()
+                d_optimizer.step()
+
+                g_optimizer.zero_grad()
+
+                noise = torch.randn(batch_size, config["latent_dim"], device=device)
+                fake_images = generator(noise)
+
+                g_loss = generator_loss_fn(
+                    discriminator=discriminator,
+                    fake_images=fake_images,
+                    adversarial_loss=adversarial_loss,
+                    device=device,
+                )
+
+                g_loss.backward()
+                g_optimizer.step()
+
+                running_d_loss += d_loss.item()
+                running_g_loss += g_loss.item()
 
         # Evaluate losses
         epoch_d_loss = running_d_loss / len(dataloader)
