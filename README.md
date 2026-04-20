@@ -68,5 +68,5 @@ python src/evaluate.py --real-dir <real_dir> --fake-dir <fake_dir> --image-size 
 Example:
 
 ```bash
-python ./src/evaluate.py --real-dir data --fake-dir outputs/wgan_gp_128/eval_images/individual --image-size 128 --metric both --output-dir outputs/wgan_gp_12/eval_results --nn-subset 50 --batch-size 64 --device auto
+python ./src/evaluate.py --real-dir data --fake-dir outputs/wgan_gp_128/eval_images/individual --image-size 128 --metric both --output-dir outputs/wgan_gp_128/eval_results --nn-subset 50 --batch-size 64 --device auto
 ```
