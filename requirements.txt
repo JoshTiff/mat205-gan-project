@@ -2,3 +2,5 @@ numpy==2.2.4
 matplotlib==3.10.7
 pillow==11.0.0
 PyYAML==6.0.3
+tqdm==4.67.3
+torch_fidelity==0.4.0

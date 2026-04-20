@@ -1,27 +1,11 @@
 # Custom dataset and dataloader for abstract art data
 
 from pathlib import Path
-from PIL import Image, ImageOps
+from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-
-# Transformation to add zero padding to non square images.
-class PadToSquare:
-    def __call__(self, img):
-        width, height = img.size
-        max_side = max(width, height)
-
-        pad_left = (max_side - width) // 2
-        pad_right = max_side - width - pad_left
-        pad_top = (max_side - height) // 2
-        pad_bottom = max_side - height - pad_top
-
-        return ImageOps.expand(
-            img,
-            border=(pad_left, pad_top, pad_right, pad_bottom),
-            fill=0
-        )
+from utils import PadToSquare
         
 # Dataset
 class AbstractArtDataset(Dataset):
