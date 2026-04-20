@@ -59,3 +59,14 @@ Example:
 ```bash
 python src/visualize.py --checkpoint outputs/vanilla_gan_64/checkpoints/latest.pt --sample-dir outputs/vanilla_gan_64/samples
 ```
+
+### Evaluate model
+```bash
+python src/evaluate.py --real-dir <real_dir> --fake-dir <fake_dir> --image-size <image_size> --metric <fid|kid|both> --output-dir <output_dir> [--nn-subset <n>] [--batch-size <batch_size>] [--device <auto|cuda|cpu>] [--reuse-processed]
+```
+
+Example:
+
+```bash
+python ./src/evaluate.py --real-dir data --fake-dir outputs/wgan_gp_128/eval_images/individual --image-size 128 --metric both --output-dir outputs/wgan_gp_12/eval --nn-subset 50 --batch-size 64 --device auto
+```
