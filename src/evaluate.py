@@ -14,7 +14,6 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.models import Inception_V3_Weights, inception_v3
-from torchvision.utils import save_image
 from torch_fidelity import calculate_metrics
 from tqdm import tqdm
 
@@ -78,7 +77,12 @@ def parse_args() -> argparse.Namespace:
         description="Evaluate generated images with FID/KID and nearest-neighbor matches."
     )
     parser.add_argument("--real-dir", type=str, required=True, help="Root folder of training/real images")
-    parser.add_argument("--fake-dir", type=str, required=True, help="Root folder of generated images")
+    parser.add_argument(
+        "--fake-dir",
+        type=str,
+        required=True,
+        help="Folder of generated images. Prefer the individual-image folder, not a grid-image folder.",
+    )
     parser.add_argument("--image-size", type=int, required=True, help="Training image_size used by the GAN")
     parser.add_argument(
         "--metric",
@@ -97,7 +101,7 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=str,
         required=True,
-        help="Directory for processed copies, metrics JSON, and side-by-side matches",
+        help="Directory for processed real images, metrics JSON, and side-by-side matches",
     )
     parser.add_argument(
         "--nn-subset",
@@ -126,7 +130,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--reuse-processed",
         action="store_true",
-        help="Reuse previously preprocessed folders instead of rebuilding them",
+        help="Reuse previously preprocessed real-image folders instead of rebuilding them",
     )
     return parser.parse_args()
 
@@ -146,10 +150,8 @@ def preprocess_folder_recursive(
     input_dir: str | Path,
     output_dir: str | Path,
     image_size: int,
-    workers: int,
     reuse_processed: bool,
 ) -> list[Path]:
-    del workers  # currently unused
     output_dir = Path(output_dir)
     ensure_clean_dir(output_dir, reuse_processed)
 
@@ -161,11 +163,13 @@ def preprocess_folder_recursive(
     dataset = RecursiveImageDataset(root_dir=input_dir, image_size=image_size)
 
     saved_paths: list[Path] = []
+    to_tensor = transforms.ToTensor()
+
     for idx in tqdm(range(len(dataset)), desc=f"Preprocessing {Path(input_dir).name}"):
         _, processed_image = dataset[idx]
-        tensor = transforms.ToTensor()(processed_image)
+        tensor = to_tensor(processed_image)
         save_path = output_dir / f"img_{idx:06d}.png"
-        save_image(tensor, save_path)
+        transforms.functional.to_pil_image(tensor).save(save_path)
         saved_paths.append(save_path)
 
     return saved_paths
@@ -175,7 +179,7 @@ class InceptionFeatureExtractor(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         weights = Inception_V3_Weights.DEFAULT
-        model = inception_v3(weights=weights, aux_logits=False)
+        model = inception_v3(weights=weights)
         model.fc = nn.Identity()
         self.model = model
         self.weights = weights
@@ -279,36 +283,30 @@ def main() -> None:
 
     output_dir = Path(args.output_dir)
     processed_real_dir = output_dir / f"processed_real_{args.image_size}"
-    processed_fake_dir = output_dir / f"processed_fake_{args.image_size}"
     nn_dir = output_dir / "nearest_neighbors"
     ensure_dir(output_dir)
 
-    print("Step 1/3: Preprocessing real images with the same square-pad + resize logic used in training...")
+    print("Step 1/2: Preprocessing real images with the same square-pad + resize logic used in training...")
     real_processed_paths = preprocess_folder_recursive(
         input_dir=args.real_dir,
         output_dir=processed_real_dir,
         image_size=args.image_size,
-        workers=args.workers,
         reuse_processed=args.reuse_processed,
     )
 
-    print("Step 2/3: Preprocessing generated images to the same evaluation size...")
-    fake_processed_paths = preprocess_folder_recursive(
-        input_dir=args.fake_dir,
-        output_dir=processed_fake_dir,
-        image_size=args.image_size,
-        workers=args.workers,
-        reuse_processed=args.reuse_processed,
-    )
+    print("Collecting generated images recursively (no fake-image preprocessing)...")
+    fake_paths = collect_paths(args.fake_dir)
+    if not fake_paths:
+        raise ValueError(f"No generated images found recursively under {args.fake_dir}")
 
     compute_fid = args.metric in {"fid", "both"}
     compute_kid = args.metric in {"kid", "both"}
-    kid_subset_size = min(args.kid_subset_size, len(real_processed_paths), len(fake_processed_paths))
+    kid_subset_size = min(args.kid_subset_size, len(real_processed_paths), len(fake_paths))
 
-    print("Step 3/3: Computing metrics...")
+    print("Step 2/2: Computing metrics...")
     metrics = calculate_metrics(
         input1=str(processed_real_dir),
-        input2=str(processed_fake_dir),
+        input2=str(args.fake_dir),
         cuda=device.type == "cuda",
         fid=compute_fid,
         kid=compute_kid,
@@ -320,7 +318,8 @@ def main() -> None:
         "recommended_primary_metric": "FID",
         "image_size": args.image_size,
         "real_count": len(real_processed_paths),
-        "fake_count": len(fake_processed_paths),
+        "fake_count": len(fake_paths),
+        "fake_preprocessing_skipped": True,
     }
 
     if compute_fid:
@@ -334,7 +333,7 @@ def main() -> None:
 
     print("Building nearest-neighbor side-by-side comparisons...")
     matches = build_nearest_neighbor_gallery(
-        fake_paths=fake_processed_paths,
+        fake_paths=fake_paths,
         real_paths=real_processed_paths,
         subset_count=args.nn_subset,
         output_dir=nn_dir,
