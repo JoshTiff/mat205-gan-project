@@ -62,14 +62,14 @@ class FeatureImageDataset(Dataset):
     def __len__(self) -> int:
         return len(self.image_paths)
 
-    def __getitem__(self, idx: int) -> tuple[Path, torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[str, torch.Tensor]:
         path = self.image_paths[idx]
         with Image.open(path) as img:
             img = img.convert("RGB")
             img = self.resize(img)
             tensor = self.to_tensor(img)
             tensor = self.normalize(tensor)
-        return path, tensor
+        return str(path), tensor
 
 # Parse command lien arguments
 def parse_args() -> argparse.Namespace:
