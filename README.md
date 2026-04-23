@@ -70,3 +70,14 @@ Example:
 ```bash
 python ./src/evaluate.py --real-dir data --fake-dir outputs/wgan_gp_128/eval_images/individual --image-size 128 --metric both --output-dir outputs/wgan_gp_128/eval_results --nn-subset 50 --batch-size 64 --device auto
 ```
+
+### Plot losses
+```bash
+python src/plot_losses.py --checkpoint <checkpoint_path> --output <output_path>
+```
+
+Example:
+
+```bash
+python src/plot_losses.py --checkpoint outputs/wgan_gp_128/checkpoints/latest.pt --output outputs/wgan_gp_128/loss_plot.png
+```
